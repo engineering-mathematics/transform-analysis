@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from scipy import signal as _signal
+from scipy import signal as _scipy_signal
 
 from . import _validate
 from ._errors import DomainError
@@ -14,14 +14,16 @@ from ._results import Spectrum
 if TYPE_CHECKING:
     import numpy.typing as npt
 
-    from ._types import Array
 
 MIN_SEGMENT = 2
 MIN_BINS = 3
+# scipy-stubs overloads for periodogram/welch differ between scipy releases (1.17 rejects
+# valid calls), so the module is used untyped here; inputs are validated above.
+_signal: Any = _scipy_signal
 WINDOWS = ("boxcar", "hann", "hamming", "blackman")
 
 
-def window(kind: str, n: int) -> Array:
+def window(kind: str, n: int) -> npt.NDArray[np.float64]:
     """Periodic (DFT-even) window of length ``n``: boxcar, hann, hamming or blackman."""
     if kind not in WINDOWS:
         raise DomainError(f"window must be one of {WINDOWS}, got {kind!r}")
@@ -34,7 +36,7 @@ def periodogram(
     x: npt.ArrayLike, sample_rate: float = 1.0, *, window_kind: str = "hann"
 ) -> Spectrum:
     """One-sided power spectral density from a single windowed FFT."""
-    data = _validate.signal(x, minimum=2, allow_complex=False)
+    data = _validate.signal(x, minimum=2, allow_complex=False).astype(np.float64)
     rate = _validate.positive("sample_rate", sample_rate)
     freqs, power = _signal.periodogram(
         data, fs=rate, window=window(window_kind, data.size), detrend="constant", scaling="density"
@@ -55,7 +57,7 @@ def welch(
     Averaging lowers the variance of the estimate at the cost of frequency resolution
     (``sample_rate / segment_length``). ``overlap`` is a fraction in ``[0, 1)``.
     """
-    data = _validate.signal(x, minimum=2, allow_complex=False)
+    data = _validate.signal(x, minimum=2, allow_complex=False).astype(np.float64)
     rate = _validate.positive("sample_rate", sample_rate)
     if not 0.0 <= overlap < 1.0:
         raise DomainError(f"overlap must be in [0, 1), got {overlap}")

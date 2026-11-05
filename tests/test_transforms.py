@@ -35,7 +35,7 @@ finite_signals = st.lists(st.floats(-1e3, 1e3), min_size=2, max_size=64)
 
 
 def tone(freq: float, rate: float, n: int, amplitude: float = 1.0) -> np.ndarray:
-    return amplitude * np.sin(2 * np.pi * freq * np.arange(n) / rate)
+    return np.asarray(amplitude * np.sin(2 * np.pi * freq * np.arange(n) / rate), dtype=float)
 
 
 # --- FFT -------------------------------------------------------------------------------
